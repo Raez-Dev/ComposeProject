@@ -11,18 +11,23 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavHostController
 import com.google.accompanist.pager.*
+import com.raezcorp.composeproject.navigation.Screen
 import com.raezcorp.composeproject.ui.theme.*
 import com.raezcorp.composeproject.util.Constants.LAST_ON_BOARDING_PAGE
 import com.raezcorp.composeproject.util.Constants.ON_BOARDING_PAGE_COUNT
 
 @OptIn(ExperimentalPagerApi::class)
 @Composable
-fun WelcomeScreen() {
+fun WelcomeScreen(
+    navHostController: NavHostController,
+    welcomeViewModel: WelcomeViewModel = hiltViewModel()
+) {
 
     val pages = listOf(
         OnBoardingPage.First,
@@ -57,13 +62,17 @@ fun WelcomeScreen() {
             indicatorWidth = PAGING_INDICATOR_WIDTH
         )
 
-        FinishButton(pagerState = pagerState,modifier = Modifier.weight(1f))
+        FinishButton(pagerState = pagerState, modifier = Modifier.weight(1f)) {
+            navHostController.popBackStack() // Get out of the screen stack
+            navHostController.navigate(Screen.Login.route) // Navigate to other screen
+            welcomeViewModel.saveOnBoardingState(true) // Save state in DataStore
+        }
     }
 }
 
 @OptIn(ExperimentalPagerApi::class)
 @Composable
-fun FinishButton(pagerState: PagerState,modifier : Modifier) {
+fun FinishButton(pagerState: PagerState, modifier: Modifier, onActionClick: () -> Unit) {
     Row(
         modifier = modifier.padding(horizontal = EXTRA_LARGE_PADDING),
         verticalAlignment = Alignment.Top,
@@ -71,9 +80,10 @@ fun FinishButton(pagerState: PagerState,modifier : Modifier) {
     ) {
         AnimatedVisibility(
             modifier = Modifier.fillMaxWidth(),
-            visible = pagerState.currentPage == LAST_ON_BOARDING_PAGE - 1) {
+            visible = pagerState.currentPage == LAST_ON_BOARDING_PAGE - 1
+        ) {
             Button(
-                onClick = {},
+                onClick = { onActionClick() },
                 colors = ButtonDefaults.buttonColors(
                     backgroundColor = MaterialTheme.colors.buttonBackgroundColor,
                     contentColor = MaterialTheme.colors.contentBackgroundColor
