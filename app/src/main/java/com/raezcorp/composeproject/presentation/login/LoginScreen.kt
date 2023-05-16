@@ -1,5 +1,6 @@
 package com.raezcorp.composeproject.presentation.login
 
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -9,18 +10,19 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.Modifier
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
@@ -30,7 +32,9 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+
 import com.raezcorp.composeproject.R
+import com.raezcorp.composeproject.navigation.Screen
 import com.raezcorp.composeproject.ui.theme.LigthColorMain
 import com.raezcorp.composeproject.ui.theme.titleLoginColor
 
@@ -39,11 +43,33 @@ fun LoginScreen(
     navHostController: NavHostController,
     loginViewModel: LoginViewModel = hiltViewModel()
 ) {
-    var userName by remember {
+
+    val stateElements = loginViewModel.stateElements
+    val state = loginViewModel.state
+
+    val context = LocalContext.current
+
+
+    /*var userName by remember {
         mutableStateOf("")
     }
     var password by remember {
         mutableStateOf("")
+    }*/
+
+
+    LaunchedEffect(key1 = state.user, key2 = state.error){
+
+        if(state.user != null){
+            Toast.makeText(context,"Bienvenido ${state.user?.names}",Toast.LENGTH_LONG).show()
+            navHostController.popBackStack()
+            navHostController.navigate(Screen.Home.route)
+        }
+        if(state.error != null){
+            Toast.makeText(context,state.error,Toast.LENGTH_LONG).show()
+        }
+        loginViewModel.resetStateUser()
+
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -97,8 +123,10 @@ fun LoginScreen(
         ) {
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
-                value = userName,
-                onValueChange = { userName = it },
+                value = stateElements.email,
+                onValueChange = {
+                    loginViewModel.onEvent(LoginFormEvents.EmailChange(it))
+                },
                 label = {
                     Text(text = "Username")
                 },
@@ -108,13 +136,20 @@ fun LoginScreen(
 
                     }
                 ),
-                isError = false,
+                isError = stateElements.emailError != null,
                 singleLine = true,
             )
+
+            if(stateElements.emailError != null){
+                Text(text = stateElements.emailError!!,color= MaterialTheme.colors.error)
+            }
+
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
-                value = password,
-                onValueChange = { password = it },
+                value = stateElements.password,
+                onValueChange = {
+                    loginViewModel.onEvent(LoginFormEvents.PasswordChange(it))
+                },
                 label = {
                     Text(text = "Password")
                 },
@@ -124,18 +159,27 @@ fun LoginScreen(
 
                     }
                 ),
-                isError = false,
+                isError = stateElements.passwordError != null,
                 singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if(stateElements.visualTransformation){
+                    VisualTransformation.None
+                }else{
+                    PasswordVisualTransformation()
+                },
                 trailingIcon = {
-                    IconButton(onClick = { /*TODO*/ }) {
+                    IconButton(onClick = { loginViewModel.onEvent(LoginFormEvents.VisualTransformationChange(!stateElements.visualTransformation)) }) {
                         Icon(
-                            imageVector = Icons.Default.Visibility,
+                            imageVector = if(stateElements.visualTransformation) Icons.Default.Visibility
+                            else Icons.Default.VisibilityOff,
                             contentDescription = "Visibilty"
                         )
                     }
                 }
             )
+
+            if(stateElements.passwordError != null){
+                Text(text = stateElements.passwordError!!,color= MaterialTheme.colors.error)
+            }
             Button(
                 onClick = {
                     loginViewModel.onEvent(LoginFormEvents.Submit)
@@ -154,6 +198,17 @@ fun LoginScreen(
             ) {
                 Text(text = "Ingresar", fontSize = 17.sp)
             }
+
+            if(state.isLoading){
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+            }
+
+            /*if(state.user != null){
+                Toast.makeText(context,"Bienvenido ${state.user?.names}",Toast.LENGTH_LONG).show()
+            }
+            if(state.error != null){
+                Toast.makeText(context,state.error,Toast.LENGTH_LONG).show()
+            }*/
 
             Text(
                 modifier = Modifier
